@@ -1,0 +1,184 @@
+{
+  "name": "Voice Bridge - Conversacion Completa",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voice-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 340]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\nconst message = body.message || '';\nconst sessionId = body.session_id || null;\nconst instructions = body.instructions || 'Eres un asistente amable y conversacional. Responde siempre en español de forma natural y concisa.';\n\nif (!message) {\n  throw new Error('Campo \"message\" es requerido');\n}\n\nreturn [{\n  json: {\n    message,\n    session_id: sessionId,\n    instructions,\n    necesita_sesion: !sessionId\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Extraer Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-session",
+              "leftValue": "={{ $json.necesita_sesion }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Tiene Sesion?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [640, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3030/api/v1/sessions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer mi_token_secreto_aqui"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ instructions: $('Extraer Datos').item.json.instructions, voice: 'alloy' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Crear Sesion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const datos = $('Extraer Datos').first().json;\nlet sessionId;\n\ntry {\n  const nueva = $('Crear Sesion').first();\n  if (nueva && nueva.json.session_id) {\n    sessionId = nueva.json.session_id;\n  }\n} catch(e) {}\n\nif (!sessionId) {\n  sessionId = datos.session_id;\n}\n\nreturn [{\n  json: {\n    session_id: sessionId,\n    message: datos.message\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Resolver Session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3030/api/v1/sessions/{{ $json.session_id }}/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer mi_token_secreto_aqui"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.message, return_audio: false }) }}",
+        "options": {
+          "timeout": 35000
+        }
+      },
+      "id": "a1b2c3d4-0006-4000-8000-000000000006",
+      "name": "Enviar Mensaje",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 340]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst sid = $('Resolver Session').first().json.session_id;\n\nreturn [{\n  json: {\n    success: true,\n    session_id: sid,\n    respuesta: resp.response_text,\n    duracion_ms: resp.duration_ms,\n    nota: 'Envia session_id en tu proximo mensaje para continuar la conversacion'\n  }\n}];"
+      },
+      "id": "a1b2c3d4-0007-4000-8000-000000000007",
+      "name": "Formatear",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 340]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "a1b2c3d4-0008-4000-8000-000000000008",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1760, 340]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Extraer Datos", "type": "main", "index": 0 }]]
+    },
+    "Extraer Datos": {
+      "main": [[{ "node": "Tiene Sesion?", "type": "main", "index": 0 }]]
+    },
+    "Tiene Sesion?": {
+      "main": [
+        [{ "node": "Crear Sesion", "type": "main", "index": 0 }],
+        [{ "node": "Resolver Session", "type": "main", "index": 0 }]
+      ]
+    },
+    "Crear Sesion": {
+      "main": [[{ "node": "Resolver Session", "type": "main", "index": 0 }]]
+    },
+    "Resolver Session": {
+      "main": [[{ "node": "Enviar Mensaje", "type": "main", "index": 0 }]]
+    },
+    "Enviar Mensaje": {
+      "main": [[{ "node": "Formatear", "type": "main", "index": 0 }]]
+    },
+    "Formatear": {
+      "main": [[{ "node": "Responder", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["voice", "openai", "realtime", "conversacion"],
+  "meta": {
+    "templateId": "voice-bridge-conversacion-completa"
+  }
+}

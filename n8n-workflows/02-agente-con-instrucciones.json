@@ -1,0 +1,148 @@
+{
+  "name": "Voice Bridge - Agente con Instrucciones Personalizadas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agente-voz",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-agente",
+      "name": "Webhook Agente",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "notes": "POST con: { agent_type: 'ventas'|'soporte'|'custom', message: string, session_id?: string, custom_instructions?: string }"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\n// Definir instrucciones por tipo de agente\nconst AGENTS = {\n  ventas: `Eres María, una experta asesora de ventas de una tienda de tecnología. \nTu objetivo es ayudar a los clientes a encontrar el producto ideal para sus necesidades.\nSiempre ofrece opciones y resalta los beneficios. Sé entusiasta y persuasiva pero honesta.\nSi no sabes algo, di que lo verificarás. Responde siempre en español.\nMantén las respuestas cortas y conversacionales.`,\n\n  soporte: `Eres Carlos, un agente de soporte técnico experto. \nTu misión es resolver problemas técnicos de forma clara y paso a paso.\nSiempre confirma que el usuario entendió antes de continuar. Sé paciente y empático.\nSi el problema es grave, escala al nivel 2 de soporte. Responde en español.\nSé conciso pero completo.`,\n\n  reservas: `Eres Ana, la asistente de reservas de un hotel boutique.\nAyudas a los huéspedes con reservaciones, información sobre habitaciones, tarifas y servicios.\nSiempre verifica disponibilidad antes de confirmar. Sé cálida y profesional.\nMantén un tono elegante y hospitalario. Responde en español.`,\n\n  custom: body.custom_instructions || 'Eres un asistente útil. Responde en español.'\n};\n\nconst agentType = body.agent_type || 'custom';\nconst instructions = AGENTS[agentType] || AGENTS.custom;\n\nreturn [{\n  json: {\n    message: body.message,\n    session_id: body.session_id || null,\n    agent_type: agentType,\n    instructions: instructions,\n    needs_new_session: !body.session_id\n  }\n}];"
+      },
+      "id": "seleccionar-agente",
+      "name": "Seleccionar Agente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "notes": "Selecciona las instrucciones según el tipo de agente solicitado"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{
+            "id": "check-new",
+            "leftValue": "={{ $json.needs_new_session }}",
+            "rightValue": true,
+            "operator": { "type": "boolean", "operation": "true" }
+          }],
+          "combinator": "and"
+        }
+      },
+      "id": "check-session",
+      "name": "¿Nueva Sesión?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3030/api/v1/sessions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "instructions", "value": "={{ $('Seleccionar Agente').item.json.instructions }}" },
+            { "name": "voice", "value": "nova" },
+            {
+              "name": "metadata",
+              "value": "={{ JSON.stringify({ agent_type: $('Seleccionar Agente').item.json.agent_type, created_at: new Date().toISOString() }) }}"
+            }
+          ]
+        },
+        "options": { "timeout": 15000 }
+      },
+      "id": "crear-sesion-agente",
+      "name": "Crear Sesión de Agente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "const agentData = $('Seleccionar Agente').first().json;\nlet sessionId = agentData.session_id;\n\ntry {\n  const nueva = $('Crear Sesión de Agente').first();\n  if (nueva?.json?.session_id) sessionId = nueva.json.session_id;\n} catch(e) {}\n\nreturn [{ json: { session_id: sessionId, message: agentData.message, agent_type: agentData.agent_type } }];"
+      },
+      "id": "resolver-session",
+      "name": "Resolver Session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3030/api/v1/sessions/{{ $json.session_id }}/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "message", "value": "={{ $json.message }}" },
+            { "name": "return_audio", "value": "false" }
+          ]
+        },
+        "options": { "timeout": 35000 }
+      },
+      "id": "enviar-al-agente",
+      "name": "Enviar al Agente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst session = $('Resolver Session').first().json;\n\nreturn [{\n  json: {\n    success: true,\n    session_id: session.session_id,\n    agent_type: session.agent_type,\n    user_message: session.message,\n    agent_response: resp.response_text,\n    duration_ms: resp.duration_ms,\n    hint: 'Para continuar la conversación, envía el mismo session_id en próximas peticiones'\n  }\n}];"
+      },
+      "id": "formatear",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "responder",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Agente": { "main": [[{ "node": "Seleccionar Agente", "type": "main", "index": 0 }]] },
+    "Seleccionar Agente": { "main": [[{ "node": "¿Nueva Sesión?", "type": "main", "index": 0 }]] },
+    "¿Nueva Sesión?": {
+      "main": [
+        [{ "node": "Crear Sesión de Agente", "type": "main", "index": 0 }],
+        [{ "node": "Resolver Session", "type": "main", "index": 0 }]
+      ]
+    },
+    "Crear Sesión de Agente": { "main": [[{ "node": "Resolver Session", "type": "main", "index": 0 }]] },
+    "Resolver Session": { "main": [[{ "node": "Enviar al Agente", "type": "main", "index": 0 }]] },
+    "Enviar al Agente": { "main": [[{ "node": "Formatear Respuesta", "type": "main", "index": 0 }]] },
+    "Formatear Respuesta": { "main": [[{ "node": "Responder", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["voice", "openai", "agent", "realtime"],
+  "meta": { "templateId": "voice-bridge-agent" }
+}

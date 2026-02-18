@@ -1,0 +1,203 @@
+{
+  "name": "Voice Bridge - Conversación por Texto",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "voz-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-entrada",
+      "name": "Webhook Entrada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "notes": "Recibe peticiones con: { session_id?: string, message: string, instructions?: string }"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verifica si viene un session_id en el body\nconst body = $input.first().json.body || $input.first().json;\nconst sessionId = body.session_id || null;\nconst message = body.message;\nconst instructions = body.instructions || null;\n\nif (!message) {\n  throw new Error('El campo \"message\" es requerido');\n}\n\nreturn [{\n  json: {\n    session_id: sessionId,\n    message: message,\n    instructions: instructions,\n    needs_new_session: !sessionId\n  }\n}];"
+      },
+      "id": "preparar-datos",
+      "name": "Preparar Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "notes": "Extrae y valida datos del webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "check-session",
+              "leftValue": "={{ $json.needs_new_session }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "tiene-sesion",
+      "name": "¿Tiene Sesión?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "notes": "Si no hay session_id, crear una nueva sesión"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3030/api/v1/sessions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "instructions",
+              "value": "={{ $('Preparar Datos').item.json.instructions || 'Eres un asistente útil y amable. Responde siempre en español.' }}"
+            },
+            {
+              "name": "voice",
+              "value": "alloy"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "crear-sesion",
+      "name": "Crear Sesión en Bridge",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 180],
+      "notes": "Crea una nueva sesión en el bridge local. Guarda el session_id para reusarlo."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Determinar el session_id a usar\nconst preparados = $('Preparar Datos').first().json;\nlet sessionId;\n\n// Si llegamos por la rama 'crear sesión'\ntry {\n  const sesionCreada = $('Crear Sesión en Bridge').first();\n  if (sesionCreada && sesionCreada.json.session_id) {\n    sessionId = sesionCreada.json.session_id;\n  }\n} catch(e) {}\n\n// Si no, usar el session_id del input original\nif (!sessionId) {\n  sessionId = preparados.session_id;\n}\n\nreturn [{\n  json: {\n    session_id: sessionId,\n    message: preparados.message\n  }\n}];"
+      },
+      "id": "merge-session",
+      "name": "Unir Session ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "notes": "Unifica el session_id (nuevo o existente)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3030/api/v1/sessions/{{ $json.session_id }}/text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.message }}"
+            },
+            {
+              "name": "return_audio",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 35000
+        }
+      },
+      "id": "enviar-mensaje",
+      "name": "Enviar Mensaje a OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300],
+      "notes": "Envía el mensaje y espera la respuesta de GPT-4o Realtime"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst sessionId = $('Unir Session ID').first().json.session_id;\n\nreturn [{\n  json: {\n    success: true,\n    session_id: sessionId,\n    response_text: response.response_text,\n    duration_ms: response.duration_ms,\n    message: 'Guarda el session_id para continuar la conversación'\n  }\n}];"
+      },
+      "id": "formatear-respuesta",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300],
+      "notes": "Prepara la respuesta final para devolver al cliente"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "responder-webhook",
+      "name": "Responder al Cliente",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1780, 300],
+      "notes": "Devuelve la respuesta de OpenAI al cliente que llamó el webhook"
+    }
+  ],
+  "connections": {
+    "Webhook Entrada": {
+      "main": [[{ "node": "Preparar Datos", "type": "main", "index": 0 }]]
+    },
+    "Preparar Datos": {
+      "main": [[{ "node": "¿Tiene Sesión?", "type": "main", "index": 0 }]]
+    },
+    "¿Tiene Sesión?": {
+      "main": [
+        [{ "node": "Crear Sesión en Bridge", "type": "main", "index": 0 }],
+        [{ "node": "Unir Session ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Crear Sesión en Bridge": {
+      "main": [[{ "node": "Unir Session ID", "type": "main", "index": 0 }]]
+    },
+    "Unir Session ID": {
+      "main": [[{ "node": "Enviar Mensaje a OpenAI", "type": "main", "index": 0 }]]
+    },
+    "Enviar Mensaje a OpenAI": {
+      "main": [[{ "node": "Formatear Respuesta", "type": "main", "index": 0 }]]
+    },
+    "Formatear Respuesta": {
+      "main": [[{ "node": "Responder al Cliente", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["voice", "openai", "realtime", "bridge"],
+  "meta": {
+    "templateId": "voice-bridge-text-conversation"
+  }
+}

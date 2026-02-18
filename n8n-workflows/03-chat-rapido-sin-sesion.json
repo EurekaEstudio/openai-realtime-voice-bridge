@@ -1,0 +1,69 @@
+{
+  "name": "Voice Bridge - Chat Rápido (Sin Sesión Persistente)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat-rapido",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-rapido",
+      "name": "Webhook Chat Rápido",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "notes": "POST con: { message: string, instructions?: string }\nNo requiere gestionar session_id. Ideal para preguntas únicas."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3030/api/v1/chat",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ ($input.first().json.body || $input.first().json).message }}"
+            },
+            {
+              "name": "instructions",
+              "value": "={{ ($input.first().json.body || $input.first().json).instructions || 'Eres un asistente útil y conciso. Responde en español.' }}"
+            },
+            { "name": "return_audio", "value": "false" }
+          ]
+        },
+        "options": { "timeout": 40000 }
+      },
+      "id": "chat-directo",
+      "name": "Chat Directo con OpenAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 300],
+      "notes": "El endpoint /chat crea sesión, responde y cierra automáticamente. Más simple pero sin memoria."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, response: $json.response_text, duration_ms: $json.duration_ms }) }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "responder-rapido",
+      "name": "Responder",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [880, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Chat Rápido": { "main": [[{ "node": "Chat Directo con OpenAI", "type": "main", "index": 0 }]] },
+    "Chat Directo con OpenAI": { "main": [[{ "node": "Responder", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["voice", "openai", "quick-chat"],
+  "meta": { "templateId": "voice-bridge-quick-chat" }
+}
