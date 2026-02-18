@@ -17,9 +17,14 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { SessionManager } from './session-manager.js';
 import { createSessionsRouter } from './routes/sessions.js';
 import { log } from './utils/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ─────────────────────────────────────────────
 //  Validación de variables de entorno críticas
@@ -173,6 +178,11 @@ app.post('/api/v1/chat', authMiddleware, async (req, res) => {
     }
   }
 });
+
+// ─────────────────────────────────────────────
+//  Interfaz web de llamada de voz
+// ─────────────────────────────────────────────
+app.use('/call', express.static(join(__dirname, '..', 'public')));
 
 // ─────────────────────────────────────────────
 //  Manejo de errores 404
