@@ -1,569 +1,903 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Voice Bridge - Llamada de Voz</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0f0f1a;
-    color: #fff;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  .container {
-    width: 100%;
-    max-width: 420px;
-    padding: 20px;
-    text-align: center;
-  }
-  h1 { font-size: 1.4rem; margin-bottom: 6px; color: #a78bfa; }
-  .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 30px; }
-
-  /* Status */
-  .status {
-    font-size: 0.85rem;
-    padding: 8px 16px;
-    border-radius: 20px;
-    display: inline-block;
-    margin-bottom: 30px;
-  }
-  .status.idle { background: #1a1a2e; color: #888; }
-  .status.connecting { background: #1a1a2e; color: #f59e0b; }
-  .status.ready { background: #0d2818; color: #4ade80; }
-  .status.recording { background: #2d1215; color: #f87171; animation: pulse 1s infinite; }
-  .status.thinking { background: #1a1a2e; color: #a78bfa; animation: pulse 1.5s infinite; }
-  .status.speaking { background: #0d2818; color: #4ade80; }
-  .status.error { background: #2d1215; color: #f87171; }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  /* Mic button */
-  .mic-area { margin: 20px 0 30px; }
-  .mic-btn {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: 3px solid #333;
-    background: #1a1a2e;
-    color: #888;
-    font-size: 48px;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  .mic-btn:hover { border-color: #a78bfa; color: #a78bfa; }
-  .mic-btn.recording {
-    border-color: #f87171;
-    background: #2d1215;
-    color: #f87171;
-    box-shadow: 0 0 30px rgba(248,113,113,0.3);
-    animation: pulse-btn 1s infinite;
-  }
-  .mic-btn.disabled { opacity: 0.4; cursor: not-allowed; }
-
-  @keyframes pulse-btn {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-  }
-
-  .mic-hint {
-    font-size: 0.8rem;
-    color: #555;
-    margin-top: 12px;
-  }
-
-  /* Chat / text input */
-  .text-area {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-  .text-area input {
-    flex: 1;
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid #333;
-    background: #1a1a2e;
-    color: #fff;
-    font-size: 0.9rem;
-    outline: none;
-  }
-  .text-area input:focus { border-color: #a78bfa; }
-  .text-area button {
-    padding: 10px 18px;
-    border-radius: 10px;
-    border: none;
-    background: #a78bfa;
-    color: #fff;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-  .text-area button:hover { background: #8b5cf6; }
-
-  /* Messages */
-  .messages {
-    max-height: 300px;
-    overflow-y: auto;
-    margin-bottom: 20px;
-    text-align: left;
-  }
-  .msg {
-    padding: 10px 14px;
-    border-radius: 12px;
-    margin-bottom: 8px;
-    font-size: 0.85rem;
-    line-height: 1.4;
-    max-width: 90%;
-  }
-  .msg.user {
-    background: #2d1b69;
-    color: #c4b5fd;
-    margin-left: auto;
-    text-align: right;
-  }
-  .msg.assistant {
-    background: #1a2e1a;
-    color: #a7f3d0;
-  }
-  .msg .time {
-    font-size: 0.7rem;
-    color: #555;
-    margin-top: 4px;
-  }
-
-  /* Config */
-  .config {
-    background: #1a1a2e;
-    border-radius: 12px;
-    padding: 14px;
-    margin-bottom: 20px;
-    text-align: left;
-  }
-  .config summary {
-    cursor: pointer;
-    font-size: 0.85rem;
-    color: #888;
-  }
-  .config-inner { margin-top: 12px; }
-  .config label {
-    display: block;
-    font-size: 0.75rem;
-    color: #666;
-    margin-bottom: 3px;
-    margin-top: 8px;
-  }
-  .config input, .config select {
-    width: 100%;
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #333;
-    background: #0f0f1a;
-    color: #fff;
-    font-size: 0.8rem;
-  }
-  .config .connect-btn {
-    width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    border: none;
-    background: #4ade80;
-    color: #000;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 12px;
-    font-size: 0.85rem;
-  }
-  .config .connect-btn:hover { background: #22c55e; }
-  .config .connect-btn.disconnect { background: #f87171; color: #fff; }
-</style>
-</head>
-<body>
-<div class="container">
-  <h1>Voice Bridge</h1>
-  <p class="subtitle">Habla con la IA por voz o texto</p>
-
-  <!-- Config -->
-  <details class="config" id="configPanel">
-    <summary>Configuracion</summary>
-    <div class="config-inner">
-      <label>URL del Bridge</label>
-      <input type="text" id="bridgeUrl" value="https://host-voice-real-time.pijpe2.easypanel.host">
-      <label>Token de autenticacion</label>
-      <input type="password" id="bridgeToken" value="vrb_s3cur3_t0k3n_2024x">
-      <label>Instrucciones del asistente</label>
-      <input type="text" id="instructions" value="Eres un asistente amable. Responde siempre en espanol de forma natural y concisa.">
-      <label>Voz</label>
-      <select id="voiceSelect">
-        <option value="alloy" selected>Alloy</option>
-        <option value="echo">Echo</option>
-        <option value="fable">Fable</option>
-        <option value="onyx">Onyx</option>
-        <option value="nova">Nova</option>
-        <option value="shimmer">Shimmer</option>
-        <option value="coral">Coral</option>
-        <option value="verse">Verse</option>
-      </select>
-      <button class="connect-btn" id="connectBtn" onclick="toggleSession()">Iniciar Sesion</button>
-    </div>
-  </details>
-
-  <!-- Status -->
-  <div class="status idle" id="status">Sin conexion</div>
-
-  <!-- Messages -->
-  <div class="messages" id="messages"></div>
-
-  <!-- Mic -->
-  <div class="mic-area">
-    <button class="mic-btn disabled" id="micBtn">&#127908;</button>
-    <div class="mic-hint" id="micHint">Conecta primero para hablar</div>
-  </div>
-
-  <!-- Text input -->
-  <div class="text-area">
-    <input type="text" id="textInput" placeholder="O escribe un mensaje..." disabled>
-    <button id="sendBtn" onclick="sendText()" disabled>Enviar</button>
-  </div>
-</div>
-
-<script>
-let sessionId = null;
-let mediaRecorder = null;
-let audioChunks = [];
-let isRecording = false;
-let audioContext = null;
-
-const $ = id => document.getElementById(id);
-const statusEl = $('status');
-const micBtn = $('micBtn');
-const micHint = $('micHint');
-const messagesEl = $('messages');
-const textInput = $('textInput');
-const sendBtn = $('sendBtn');
-const connectBtn = $('connectBtn');
-
-function getConfig() {
-  return {
-    url: $('bridgeUrl').value.replace(/\/$/, ''),
-    token: $('bridgeToken').value,
-    instructions: $('instructions').value,
-    voice: $('voiceSelect').value,
-  };
-}
-
-function setStatus(text, cls) {
-  statusEl.textContent = text;
-  statusEl.className = 'status ' + cls;
-}
-
-function addMessage(text, role, durationMs) {
-  const div = document.createElement('div');
-  div.className = 'msg ' + role;
-  div.innerHTML = text + (durationMs ? `<div class="time">${durationMs}ms</div>` : '');
-  messagesEl.appendChild(div);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-
-async function apiFetch(path, body) {
-  const cfg = getConfig();
-  const res = await fetch(cfg.url + path, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + cfg.token,
-    },
-    body: JSON.stringify(body),
-  });
-  return res.json();
-}
-
-// --- Session ---
-async function toggleSession() {
-  if (sessionId) {
-    await endSession();
-  } else {
-    await startSession();
-  }
-}
-
-async function startSession() {
-  const cfg = getConfig();
-  setStatus('Conectando...', 'connecting');
-  connectBtn.textContent = 'Conectando...';
-
-  try {
-    const data = await apiFetch('/api/v1/sessions', {
-      instructions: cfg.instructions,
-      voice: cfg.voice,
-    });
-
-    if (!data.success) throw new Error(data.error);
-
-    sessionId = data.session_id;
-    setStatus('Conectado - Listo para hablar', 'ready');
-    connectBtn.textContent = 'Desconectar';
-    connectBtn.classList.add('disconnect');
-    micBtn.classList.remove('disabled');
-    micHint.textContent = 'Manten presionado para hablar';
-    textInput.disabled = false;
-    sendBtn.disabled = false;
-    $('configPanel').open = false;
-  } catch (err) {
-    setStatus('Error: ' + err.message, 'error');
-    connectBtn.textContent = 'Iniciar Sesion';
-  }
-}
-
-async function endSession() {
-  if (sessionId) {
-    const cfg = getConfig();
-    try {
-      await fetch(cfg.url + '/api/v1/sessions/' + sessionId, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + cfg.token },
-      });
-    } catch(e) {}
-  }
-  sessionId = null;
-  setStatus('Sin conexion', 'idle');
-  connectBtn.textContent = 'Iniciar Sesion';
-  connectBtn.classList.remove('disconnect');
-  micBtn.classList.add('disabled');
-  micHint.textContent = 'Conecta primero para hablar';
-  textInput.disabled = true;
-  sendBtn.disabled = true;
-}
-
-// --- Text ---
-async function sendText() {
-  const msg = textInput.value.trim();
-  if (!msg || !sessionId) return;
-
-  textInput.value = '';
-  addMessage(msg, 'user');
-  setStatus('Pensando...', 'thinking');
-
-  try {
-    const data = await apiFetch('/api/v1/sessions/' + sessionId + '/text', {
-      message: msg,
-      return_audio: true,
-    });
-
-    if (!data.success) throw new Error(data.error);
-
-    setStatus('Reproduciendo respuesta...', 'speaking');
-    addMessage(data.response_text, 'assistant', data.duration_ms);
-
-    if (data.audio_wav_base64) {
-      await playAudioBase64(data.audio_wav_base64);
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Voice Bridge - Llamada</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    setStatus('Conectado - Listo para hablar', 'ready');
-  } catch(err) {
-    setStatus('Error: ' + err.message, 'error');
-    setTimeout(() => {
-      if (sessionId) setStatus('Conectado - Listo para hablar', 'ready');
-    }, 3000);
-  }
-}
-
-textInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') sendText();
-});
-
-// --- Audio recording ---
-micBtn.addEventListener('mousedown', startRecording);
-micBtn.addEventListener('mouseup', stopRecording);
-micBtn.addEventListener('mouseleave', stopRecording);
-micBtn.addEventListener('touchstart', e => { e.preventDefault(); startRecording(); });
-micBtn.addEventListener('touchend', e => { e.preventDefault(); stopRecording(); });
-
-async function startRecording() {
-  if (!sessionId || isRecording) return;
-  isRecording = true;
-  audioChunks = [];
-  micBtn.classList.add('recording');
-  setStatus('Grabando... suelta para enviar', 'recording');
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-
-    mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) audioChunks.push(e.data);
-    };
-
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
-      if (audioChunks.length === 0) return;
-
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
-      await sendAudioBlob(blob);
-    };
-
-    mediaRecorder.start(100);
-  } catch(err) {
-    isRecording = false;
-    micBtn.classList.remove('recording');
-    setStatus('Error microfono: ' + err.message, 'error');
-  }
-}
-
-function stopRecording() {
-  if (!isRecording || !mediaRecorder) return;
-  isRecording = false;
-  micBtn.classList.remove('recording');
-
-  if (mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
-}
-
-async function sendAudioBlob(webmBlob) {
-  setStatus('Procesando audio...', 'thinking');
-  addMessage('[Audio enviado]', 'user');
-
-  try {
-    // Convert webm to WAV PCM16 using AudioContext
-    const arrayBuffer = await webmBlob.arrayBuffer();
-
-    if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a12;
+      color: #fff;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    const wavBase64 = audioBufferToWavBase64(audioBuffer);
+    .container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      height: 100dvh;
+      justify-content: space-between;
+      padding-top: 40px;
+      padding-bottom: 40px;
+    }
 
-    setStatus('Esperando respuesta...', 'thinking');
+    /* Top section */
+    .top {
+      width: 100%;
+    }
 
-    const data = await apiFetch('/api/v1/sessions/' + sessionId + '/audio', {
-      audio_base64: wavBase64,
-      audio_format: 'wav',
-      return_audio: true,
-    });
+    .call-label {
+      font-size: 0.75rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
 
-    if (!data.success) throw new Error(data.error);
+    .assistant-name {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
 
-    if (data.input_transcript) {
-      // Update last user message with transcript
-      const msgs = messagesEl.querySelectorAll('.msg.user');
-      if (msgs.length > 0) {
-        msgs[msgs.length - 1].innerHTML = data.input_transcript;
+    .call-timer {
+      font-size: 0.85rem;
+      color: #666;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Middle - visualizer + status */
+    .middle {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    /* Audio visualizer */
+    .visualizer {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #1a1a3e 0%, #0a0a12 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 24px;
+    }
+
+    .visualizer::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid #222;
+      transition: all 0.3s;
+    }
+
+    .visualizer.listening::before {
+      border-color: #4ade80;
+      box-shadow: 0 0 30px rgba(74, 222, 128, 0.15);
+    }
+
+    .visualizer.user-speaking::before {
+      border-color: #a78bfa;
+      box-shadow: 0 0 40px rgba(167, 139, 250, 0.3);
+      animation: ring-pulse 0.8s ease-in-out infinite;
+    }
+
+    .visualizer.thinking::before {
+      border-color: #f59e0b;
+      animation: ring-spin 2s linear infinite;
+    }
+
+    .visualizer.ai-speaking::before {
+      border-color: #4ade80;
+      box-shadow: 0 0 50px rgba(74, 222, 128, 0.3);
+      animation: ring-pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes ring-pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.08);
+        opacity: 0.7;
       }
     }
 
-    setStatus('Reproduciendo respuesta...', 'speaking');
-    addMessage(data.response_text, 'assistant', data.duration_ms);
+    @keyframes ring-spin {
+      0% {
+        transform: rotate(0deg);
+        border-style: dashed;
+      }
 
-    if (data.audio_wav_base64) {
-      await playAudioBase64(data.audio_wav_base64);
+      100% {
+        transform: rotate(360deg);
+        border-style: dashed;
+      }
     }
 
-    setStatus('Conectado - Listo para hablar', 'ready');
-  } catch(err) {
-    setStatus('Error: ' + err.message, 'error');
-    setTimeout(() => {
-      if (sessionId) setStatus('Conectado - Listo para hablar', 'ready');
-    }, 3000);
-  }
-}
+    /* Bars inside visualizer */
+    .bars {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 60px;
+    }
 
-// --- Audio playback ---
-function playAudioBase64(wavBase64) {
-  return new Promise((resolve) => {
-    const audio = new Audio('data:audio/wav;base64,' + wavBase64);
-    audio.onended = resolve;
-    audio.onerror = resolve;
-    audio.play().catch(resolve);
-  });
-}
+    .bar {
+      width: 5px;
+      background: #333;
+      border-radius: 3px;
+      transition: height 0.1s, background 0.3s;
+      height: 8px;
+    }
 
-// --- WAV encoder ---
-function audioBufferToWavBase64(buffer) {
-  const numChannels = 1;
-  const sampleRate = 24000;
-  const format = 1; // PCM
+    .visualizer.listening .bar {
+      background: #4ade8055;
+    }
 
-  // Resample to 24kHz mono
-  const inputData = buffer.getChannelData(0);
-  const inputSampleRate = buffer.sampleRate;
-  const ratio = inputSampleRate / sampleRate;
-  const outputLength = Math.floor(inputData.length / ratio);
-  const outputData = new Float32Array(outputLength);
+    .visualizer.user-speaking .bar {
+      background: #a78bfa;
+    }
 
-  for (let i = 0; i < outputLength; i++) {
-    const srcIndex = i * ratio;
-    const srcIndexFloor = Math.floor(srcIndex);
-    const frac = srcIndex - srcIndexFloor;
-    const s0 = inputData[srcIndexFloor] || 0;
-    const s1 = inputData[srcIndexFloor + 1] || 0;
-    outputData[i] = s0 + (s1 - s0) * frac;
-  }
+    .visualizer.thinking .bar {
+      background: #f59e0b55;
+      height: 8px !important;
+    }
 
-  // Convert to 16-bit PCM
-  const pcm16 = new Int16Array(outputLength);
-  for (let i = 0; i < outputLength; i++) {
-    const s = Math.max(-1, Math.min(1, outputData[i]));
-    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-  }
+    .visualizer.ai-speaking .bar {
+      background: #4ade80;
+    }
 
-  // Build WAV
-  const byteRate = sampleRate * numChannels * 2;
-  const blockAlign = numChannels * 2;
-  const dataSize = pcm16.length * 2;
-  const wavBuffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(wavBuffer);
+    .status-text {
+      font-size: 0.85rem;
+      color: #666;
+      min-height: 20px;
+    }
 
-  const writeString = (offset, str) => {
-    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-  };
+    .status-text.active {
+      color: #4ade80;
+    }
 
-  writeString(0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(8, 'WAVE');
-  writeString(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, format, true);
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, byteRate, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, 16, true);
-  writeString(36, 'data');
-  view.setUint32(40, dataSize, true);
+    .status-text.speaking {
+      color: #a78bfa;
+    }
 
-  const pcmBytes = new Uint8Array(wavBuffer, 44);
-  const pcm16Bytes = new Uint8Array(pcm16.buffer);
-  pcmBytes.set(pcm16Bytes);
+    .status-text.waiting {
+      color: #f59e0b;
+    }
 
-  // To base64
-  let binary = '';
-  const bytes = new Uint8Array(wavBuffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
+    /* Transcript area */
+    .transcript {
+      width: 100%;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 16px;
+      padding: 0 10px;
+    }
 
-// Auto-connect on page load if URL params present
-const params = new URLSearchParams(window.location.search);
-if (params.get('autoconnect') === '1') {
-  window.addEventListener('load', () => startSession());
-}
-</script>
+    .transcript p {
+      font-size: 0.8rem;
+      line-height: 1.4;
+      margin-bottom: 6px;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+
+    .transcript .user-text {
+      color: #c4b5fd;
+      background: #1a1535;
+      text-align: right;
+    }
+
+    .transcript .ai-text {
+      color: #a7f3d0;
+      background: #0d1f0d;
+    }
+
+    /* Bottom - call controls */
+    .bottom {
+      width: 100%;
+    }
+
+    .call-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+
+    .call-btn.start {
+      background: #22c55e;
+      color: #fff;
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+    }
+
+    .call-btn.start:hover {
+      background: #16a34a;
+      transform: scale(1.05);
+    }
+
+    .call-btn.end {
+      background: #ef4444;
+      color: #fff;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+    }
+
+    .call-btn.end:hover {
+      background: #dc2626;
+      transform: scale(1.05);
+    }
+
+    .call-btn-label {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 10px;
+    }
+
+    /* Settings gear */
+    .settings-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      color: #444;
+      font-size: 20px;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .settings-btn:hover {
+      color: #888;
+    }
+
+    /* Settings modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #151520;
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 380px;
+      border: 1px solid #222;
+    }
+
+    .modal h2 {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      color: #aaa;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 0.75rem;
+      color: #555;
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+
+    .modal input,
+    .modal select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #0a0a12;
+      color: #fff;
+      font-size: 0.85rem;
+    }
+
+    .modal textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #0a0a12;
+      color: #fff;
+      font-size: 0.85rem;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .modal .save-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #a78bfa;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      font-size: 0.9rem;
+    }
+
+    .modal .save-btn:hover {
+      background: #8b5cf6;
+    }
+
+    /* Logs Panel */
+    .logs-panel {
+      width: 100%;
+      max-height: 100px;
+      overflow-y: auto;
+      background: #0d0d14;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 8px;
+      margin-top: 16px;
+      font-size: 0.7rem;
+      font-family: monospace;
+      text-align: left;
+      color: #888;
+    }
+
+    .logs-panel .log-error {
+      color: #f87171;
+    }
+
+    .logs-panel .log-info {
+      color: #60a5fa;
+    }
+
+    .logs-panel .log-success {
+      color: #4ade80;
+    }
+  </style>
+</head>
+
+<body>
+
+  <button class="settings-btn" onclick="toggleSettings()">&#9881;</button>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <h2>Configuracion</h2>
+      <label>URL del Bridge</label>
+      <input type="text" id="bridgeUrl" value="https://host-voice-real-time.pijpe2.easypanel.host">
+      <label>Token</label>
+      <input type="password" id="bridgeToken" value="vrb_s3cur3_t0k3n_2024x">
+      <label>Instrucciones</label>
+      <textarea
+        id="instructions">Eres un asistente de voz amable y conversacional. Responde siempre en espanol de forma natural, concisa y con un tono humano. Tus respuestas deben ser cortas y directas, como en una llamada telefonica real.</textarea>
+      <label>Voz</label>
+      <select id="voiceSelect">
+        <option value="alloy">Alloy</option>
+        <option value="coral" selected>Coral</option>
+        <option value="echo">Echo</option>
+        <option value="fable">Fable</option>
+        <option value="nova">Nova</option>
+        <option value="onyx">Onyx</option>
+        <option value="shimmer">Shimmer</option>
+        <option value="verse">Verse</option>
+      </select>
+      <label>Sensibilidad del microfono</label>
+      <select id="vadSensitivity">
+        <option value="low">Baja (ambientes ruidosos)</option>
+        <option value="medium" selected>Media</option>
+        <option value="high">Alta (ambientes silenciosos)</option>
+      </select>
+      <button class="save-btn" onclick="toggleSettings()">Guardar</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Top -->
+    <div class="top">
+      <div class="call-label">Llamada de voz</div>
+      <div class="assistant-name">Asistente IA</div>
+      <div class="call-timer" id="timer">--:--</div>
+    </div>
+
+    <!-- Middle -->
+    <div class="middle">
+      <div class="visualizer" id="visualizer">
+        <div class="bars" id="bars"></div>
+      </div>
+      <div class="status-text" id="statusText">Toca para llamar</div>
+
+      <div class="transcript" id="transcript"></div>
+      <div class="logs-panel" id="logsPanel"></div>
+    </div>
+
+    <!-- Bottom -->
+    <div class="bottom">
+      <button class="call-btn start" id="callBtn" onclick="toggleCall()">&#128222;</button>
+      <div class="call-btn-label" id="callLabel">Llamar</div>
+    </div>
+  </div>
+
+  <script>
+    // --- State ---
+    let sessionId = null;
+    let inCall = false;
+    let stream = null;
+    let audioContext = null;
+    let analyser = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isListening = false;
+    let isSpeaking = false;
+    let isProcessing = false;
+    let silenceTimer = null;
+    let callStartTime = null;
+    let timerInterval = null;
+    let currentAudio = null;
+
+    // VAD thresholds
+    const VAD_THRESHOLDS = { low: 25, medium: 15, high: 8 };
+    const SILENCE_DURATION_MS = 1200; // 1.2s of silence = end of speech
+    const MIN_SPEECH_MS = 400; // Minimum speech duration to send
+    let speechStartTime = null;
+
+    const NUM_BARS = 12;
+
+    // --- DOM ---
+    const $ = id => document.getElementById(id);
+    const visualizer = $('visualizer');
+    const barsEl = $('bars');
+    const statusText = $('statusText');
+    const callBtn = $('callBtn');
+    const callLabel = $('callLabel');
+    const timerEl = $('timer');
+    const transcriptEl = $('transcript');
+    const logsPanel = $('logsPanel');
+
+    // --- Logger ---
+    function addLog(msg, type = 'info') {
+      console.log(`[${type.toUpperCase()}] ${msg}`);
+      const d = new Date();
+      const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+      const el = document.createElement('div');
+      el.className = `log-${type}`;
+      el.textContent = `[${time}] ${msg}`;
+      logsPanel.appendChild(el);
+      logsPanel.scrollTop = logsPanel.scrollHeight;
+    }
+
+    // Create bars
+    for (let i = 0; i < NUM_BARS; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      barsEl.appendChild(bar);
+    }
+    const bars = barsEl.querySelectorAll('.bar');
+
+    function getConfig() {
+      return {
+        url: $('bridgeUrl').value.replace(/\/$/, ''),
+        token: $('bridgeToken').value,
+        instructions: $('instructions').value,
+        voice: $('voiceSelect').value,
+        vadThreshold: VAD_THRESHOLDS[$('vadSensitivity').value] || 15,
+      };
+    }
+
+    function toggleSettings() {
+      const m = $('settingsModal');
+      m.classList.toggle('open');
+    }
+
+    // --- Call control ---
+    async function toggleCall() {
+      if (inCall) {
+        await endCall();
+      } else {
+        await startCall();
+      }
+    }
+
+    async function startCall() {
+      const cfg = getConfig();
+      setUI('connecting');
+
+      try {
+        // Get microphone
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+
+        // Create session
+        const res = await fetch(cfg.url + '/api/v1/sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + cfg.token,
+          },
+          body: JSON.stringify({ instructions: cfg.instructions, voice: cfg.voice }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        sessionId = data.session_id;
+        inCall = true;
+        callStartTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+        updateTimer();
+
+        setUI('listening');
+        startVAD();
+      } catch (err) {
+        cleanup();
+        setUI('idle');
+        statusText.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    async function endCall() {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+      }
+      if (sessionId) {
+        const cfg = getConfig();
+        try {
+          await fetch(cfg.url + '/api/v1/sessions/' + sessionId, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + cfg.token },
+          });
+        } catch (e) { }
+      }
+      cleanup();
+      setUI('idle');
+    }
+
+    function cleanup() {
+      inCall = false;
+      sessionId = null;
+      isListening = false;
+      isSpeaking = false;
+      isProcessing = false;
+
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      if (audioContext) { audioContext.close().catch(() => { }); audioContext = null; }
+      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
+      mediaRecorder = null;
+      analyser = null;
+    }
+
+    // --- UI states ---
+    function setUI(state) {
+      visualizer.className = 'visualizer';
+      switch (state) {
+        case 'idle':
+          callBtn.className = 'call-btn start';
+          callBtn.innerHTML = '&#128222;';
+          callLabel.textContent = 'Llamar';
+          statusText.textContent = 'Toca para llamar';
+          statusText.className = 'status-text';
+          timerEl.textContent = '--:--';
+          bars.forEach(b => b.style.height = '8px');
+          break;
+        case 'connecting':
+          callBtn.className = 'call-btn end';
+          callBtn.innerHTML = '&#128222;';
+          callLabel.textContent = 'Conectando...';
+          statusText.textContent = 'Conectando...';
+          statusText.className = 'status-text waiting';
+          break;
+        case 'listening':
+          callBtn.className = 'call-btn end';
+          callBtn.innerHTML = '&#128405;';
+          callLabel.textContent = 'Colgar';
+          statusText.textContent = 'Escuchando...';
+          statusText.className = 'status-text active';
+          visualizer.classList.add('listening');
+          break;
+        case 'user-speaking':
+          statusText.textContent = 'Hablando...';
+          statusText.className = 'status-text speaking';
+          visualizer.className = 'visualizer user-speaking';
+          break;
+        case 'thinking':
+          statusText.textContent = 'Procesando...';
+          statusText.className = 'status-text waiting';
+          visualizer.className = 'visualizer thinking';
+          break;
+        case 'ai-speaking':
+          statusText.textContent = 'Respondiendo...';
+          statusText.className = 'status-text active';
+          visualizer.className = 'visualizer ai-speaking';
+          break;
+      }
+    }
+
+    // --- Timer ---
+    function updateTimer() {
+      if (!callStartTime) return;
+      const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+      const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const secs = String(elapsed % 60).padStart(2, '0');
+      timerEl.textContent = mins + ':' + secs;
+    }
+
+    // --- Voice Activity Detection ---
+    function startVAD() {
+      if (!analyser || !inCall) return;
+      isListening = true;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      function tick() {
+        if (!inCall || !analyser) return;
+
+        analyser.getByteFrequencyData(dataArray);
+
+        // Calculate RMS volume
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        const avg = sum / dataArray.length;
+
+        // Update bars visualization
+        updateBars(dataArray);
+
+        const threshold = getConfig().vadThreshold;
+
+        if (isListening && !isProcessing) {
+          if (avg > threshold && !isSpeaking) {
+            // Started speaking
+            isSpeaking = true;
+            speechStartTime = Date.now();
+            startRecording();
+            setUI('user-speaking');
+            if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+          } else if (avg <= threshold && isSpeaking) {
+            // Possible end of speech - wait for silence duration
+            if (!silenceTimer) {
+              silenceTimer = setTimeout(() => {
+                if (isSpeaking && inCall) {
+                  const speechDuration = Date.now() - (speechStartTime || 0);
+                  isSpeaking = false;
+                  silenceTimer = null;
+                  stopRecordingAndSend(speechDuration);
+                }
+              }, SILENCE_DURATION_MS);
+            }
+          } else if (avg > threshold && isSpeaking && silenceTimer) {
+            // Resumed speaking - cancel silence timer
+            clearTimeout(silenceTimer);
+            silenceTimer = null;
+          }
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      tick();
+    }
+
+    function updateBars(dataArray) {
+      const step = Math.floor(dataArray.length / NUM_BARS);
+      for (let i = 0; i < NUM_BARS; i++) {
+        let val = 0;
+        for (let j = 0; j < step; j++) val += dataArray[i * step + j];
+        val = val / step;
+        const h = Math.max(4, (val / 255) * 60);
+        bars[i].style.height = h + 'px';
+      }
+    }
+
+    // --- Recording ---
+    function startRecording() {
+      if (!stream || mediaRecorder) return;
+
+      audioChunks = [];
+      try {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+        mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        // Solicitar fragmentos cada cierto tiempo en lugar de solo al final,
+        // para evitar problemas con grabaciones largas
+        mediaRecorder.start(250);
+        addLog('Grabación iniciada', 'info');
+      } catch (e) {
+        // Fallback mimeType
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        mediaRecorder.start(250);
+        addLog(`Grabación iniciada (fallback): ${e.message}`, 'info');
+      }
+    }
+
+    async function stopRecordingAndSend(speechDuration) {
+      if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        setUI('listening');
+        return;
+      }
+
+      isProcessing = true;
+      setUI('thinking');
+
+      // Stop recording
+      const stopped = new Promise(resolve => {
+        mediaRecorder.onstop = resolve;
+        mediaRecorder.stop();
+      });
+      await stopped;
+      mediaRecorder = null;
+
+      // Check minimum speech duration or empty chunks
+      if (speechDuration < MIN_SPEECH_MS) {
+        addLog(`Audio ignorado (muy corto: ${speechDuration}ms)`, 'info');
+        isProcessing = false;
+        setUI('listening');
+        return;
+      }
+
+      if (audioChunks.length === 0) {
+        addLog(`Error: No se capturaron datos de audio`, 'error');
+        isProcessing = false;
+        setUI('listening');
+        return;
+      }
+
+      addLog(`Procesando audio (${speechDuration}ms)...`, 'info');
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      audioChunks = [];
+
+      try {
+        // Convert to WAV
+        const arrayBuffer = await blob.arrayBuffer();
+        const decodeCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        const audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
+        decodeCtx.close();
+        const wavBase64 = audioBufferToWavBase64(audioBuffer);
+
+        // Send to bridge
+        const cfg = getConfig();
+        const res = await fetch(cfg.url + '/api/v1/sessions/' + sessionId + '/audio', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + cfg.token,
+          },
+          body: JSON.stringify({ audio_base64: wavBase64, audio_format: 'wav', return_audio: true }),
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error);
+
+        // Show transcript
+        if (data.input_transcript) {
+          addTranscript(data.input_transcript, 'user');
+        }
+        if (data.response_text) {
+          addTranscript(data.response_text, 'ai');
+          addLog(`Respuesta IA: ${data.response_text.substring(0, 30)}...`, 'success');
+        }
+
+        // Play response audio
+        if (data.audio_wav_base64) {
+          setUI('ai-speaking');
+          await playAudio(data.audio_wav_base64);
+        }
+      } catch (err) {
+        addLog(`Error enviando audio: ${err.message}`, 'error');
+        addTranscript('Error: ' + err.message, 'ai');
+      }
+
+      isProcessing = false;
+      if (inCall) setUI('listening');
+    }
+
+    // --- Audio playback ---
+    function playAudio(wavBase64) {
+      return new Promise(resolve => {
+        currentAudio = new Audio('data:audio/wav;base64,' + wavBase64);
+        currentAudio.onended = () => { currentAudio = null; resolve(); };
+        currentAudio.onerror = () => { currentAudio = null; resolve(); };
+        currentAudio.play().catch(() => { currentAudio = null; resolve(); });
+      });
+    }
+
+    // --- Transcript ---
+    function addTranscript(text, role) {
+      const p = document.createElement('p');
+      p.className = role === 'user' ? 'user-text' : 'ai-text';
+      p.textContent = text;
+      transcriptEl.appendChild(p);
+      transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    }
+
+    // --- WAV encoder (resamples to 24kHz PCM16 mono) ---
+    function audioBufferToWavBase64(buffer) {
+      const sampleRate = 24000;
+      const inputData = buffer.getChannelData(0);
+      const inputSR = buffer.sampleRate;
+      const ratio = inputSR / sampleRate;
+      const outLen = Math.floor(inputData.length / ratio);
+      const pcm16 = new Int16Array(outLen);
+
+      for (let i = 0; i < outLen; i++) {
+        const si = i * ratio;
+        const sf = Math.floor(si);
+        const f = si - sf;
+        const sample = (inputData[sf] || 0) + ((inputData[sf + 1] || 0) - (inputData[sf] || 0)) * f;
+        const clamped = Math.max(-1, Math.min(1, sample));
+        pcm16[i] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7FFF;
+      }
+
+      const dataSize = pcm16.length * 2;
+      const wav = new ArrayBuffer(44 + dataSize);
+      const v = new DataView(wav);
+      const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+
+      w(0, 'RIFF'); v.setUint32(4, 36 + dataSize, true);
+      w(8, 'WAVE'); w(12, 'fmt ');
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+      v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+      w(36, 'data'); v.setUint32(40, dataSize, true);
+      new Uint8Array(wav, 44).set(new Uint8Array(pcm16.buffer));
+
+      let bin = '';
+      const bytes = new Uint8Array(wav);
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    }
+  </script>
 </body>
+
 </html>
