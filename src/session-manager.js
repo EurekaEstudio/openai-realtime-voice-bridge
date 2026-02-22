@@ -512,6 +512,15 @@ export class SessionManager {
 
       case 'error': {
         log.error(`[Session ${session.id}] Error de OpenAI:`, event.error);
+        // Ignorar errores no-fatales que no deben interrumpir el flujo
+        const ignoredCodes = [
+          'response_cancel_not_active',   // response.cancel enviado sin respuesta activa
+          'input_audio_buffer_commit_empty', // commit de buffer vacío (secundario)
+        ];
+        if (ignoredCodes.includes(event.error?.code)) {
+          log.debug(`[Session ${session.id}] Error ignorado (no fatal): ${event.error?.code}`);
+          break;
+        }
         const pending = this._getLatestPending(session);
         if (pending) {
           const requestId = this._getLatestPendingId(session);
