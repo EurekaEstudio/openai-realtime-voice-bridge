@@ -164,7 +164,7 @@ export class SessionManager {
     session.lastActivityAt = Date.now();
 
     const requestId = uuidv4();
-    log.info(`[Session ${sessionId}] Enviando texto [req:${requestId.slice(0,8)}]: "${text.substring(0,60)}..."`);
+    log.info(`[Session ${sessionId}] Enviando texto [req:${requestId.slice(0, 8)}]: "${text.substring(0, 60)}..."`);
 
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
@@ -260,7 +260,12 @@ export class SessionManager {
     session.lastActivityAt = Date.now();
 
     const requestId = uuidv4();
-    log.info(`[Session ${sessionId}] Enviando audio [req:${requestId.slice(0,8)}]`);
+    log.info(`[Session ${sessionId}] Enviando audio [req:${requestId.slice(0, 8)}]`);
+
+    if (!audioBase64 || audioBase64.length === 0) {
+      log.error(`[Session ${sessionId}] Buffer de audio vacío, abortando [req:${requestId.slice(0, 8)}]`);
+      throw new Error('Error: El buffer de audio recibido está vacío.');
+    }
 
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
@@ -325,6 +330,12 @@ export class SessionManager {
         type: 'input_audio_buffer.clear',
       }));
 
+      // Cancelar cualquier respuesta activa antes de enviar el audio nuevo
+      // Esto previene el error 'conversation_already_has_active_response'
+      session.ws.send(JSON.stringify({
+        type: 'response.cancel'
+      }));
+
       // Enviar el audio en chunks (máximo ~15KB por mensaje)
       const CHUNK_SIZE = 15000;
       for (let i = 0; i < audioBase64.length; i += CHUNK_SIZE) {
@@ -340,14 +351,19 @@ export class SessionManager {
         event_id: `audio_${requestId}`,
       }));
 
-      // Solicitar respuesta
-      session.ws.send(JSON.stringify({
-        type: 'response.create',
-        event_id: `res_${requestId}`,
-        response: {
-          modalities: options.returnAudio !== false ? ['text', 'audio'] : ['text'],
-        },
-      }));
+      // Esperar un poco antes de solicitar la respuesta, para permitir que OpenAI procese la cancelación
+      // y el buffer, evitando el error "conversation_already_has_active_response"
+      setTimeout(() => {
+        if (session.status === 'connected') {
+          session.ws.send(JSON.stringify({
+            type: 'response.create',
+            event_id: `res_${requestId}`,
+            response: {
+              modalities: options.returnAudio !== false ? ['text', 'audio'] : ['text'],
+            },
+          }));
+        }
+      }, 350);
     });
   }
 
@@ -476,7 +492,7 @@ export class SessionManager {
         const pending = this._getLatestPending(session);
         if (pending && pending.isAudioInput) {
           pending.buffer.inputTranscript = event.transcript || '';
-          log.info(`[Session ${session.id}] Transcripción usuario: "${event.transcript?.substring(0,60)}"`);
+          log.info(`[Session ${session.id}] Transcripción usuario: "${event.transcript?.substring(0, 60)}"`);
         }
         break;
       }
@@ -485,7 +501,7 @@ export class SessionManager {
         const pending = this._getLatestPending(session);
         if (pending) {
           const requestId = this._getLatestPendingId(session);
-          log.info(`[Session ${session.id}] Respuesta completa: "${pending.buffer.textDelta?.substring(0,60)}..."`);
+          log.info(`[Session ${session.id}] Respuesta completa: "${pending.buffer.textDelta?.substring(0, 60)}..."`);
           pending.resolve(pending.buffer);
           if (requestId) {
             session.pendingResponses.delete(requestId);

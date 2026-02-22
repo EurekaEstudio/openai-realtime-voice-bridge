@@ -456,6 +456,15 @@
     <div class="bottom">
       <button class="call-btn start" id="callBtn" onclick="toggleCall()">&#128222;</button>
       <div class="call-btn-label" id="callLabel">Llamar</div>
+
+      <button class="call-btn" id="pttBtn"
+        style="display: none; margin-top: 16px; width: 80px; height: 80px; background: #3b82f6; box-shadow: 0 0 20px rgba(59,130,246,0.3); font-size: 32px;"
+        onmousedown="startManualRecording()" onmouseup="stopManualRecording()"
+        ontouchstart="startManualRecording(); event.preventDefault();"
+        ontouchend="stopManualRecording(); event.preventDefault();">
+        &#127897;
+      </button>
+      <div class="call-btn-label" id="pttLabel" style="display: none;">Mantén para hablar</div>
     </div>
   </div>
 
@@ -476,10 +485,9 @@
     let timerInterval = null;
     let currentAudio = null;
 
-    // VAD thresholds
-    const VAD_THRESHOLDS = { low: 25, medium: 15, high: 8 };
-    const SILENCE_DURATION_MS = 1200; // 1.2s of silence = end of speech
-    const MIN_SPEECH_MS = 400; // Minimum speech duration to send
+    // Push To Talk Variables
+    let manualRecordingTimeout = null;
+    const MIN_SPEECH_MS = 600;
     let speechStartTime = null;
 
     const NUM_BARS = 12;
@@ -491,6 +499,8 @@
     const statusText = $('statusText');
     const callBtn = $('callBtn');
     const callLabel = $('callLabel');
+    const pttBtn = $('pttBtn');
+    const pttLabel = $('pttLabel');
     const timerEl = $('timer');
     const transcriptEl = $('transcript');
     const logsPanel = $('logsPanel');
@@ -574,7 +584,8 @@
         updateTimer();
 
         setUI('listening');
-        startVAD();
+        // startVAD(); // Eliminado a favor de Push To Talk
+        visualizerTick(); // Solo para las barritas
       } catch (err) {
         cleanup();
         setUI('idle');
@@ -616,11 +627,14 @@
       analyser = null;
     }
 
-    // --- UI states ---
     function setUI(state) {
       visualizer.className = 'visualizer';
       switch (state) {
         case 'idle':
+          callBtn.style.display = 'flex';
+          callLabel.style.display = 'block';
+          pttBtn.style.display = 'none';
+          pttLabel.style.display = 'none';
           callBtn.className = 'call-btn start';
           callBtn.innerHTML = '&#128222;';
           callLabel.textContent = 'Llamar';
@@ -637,22 +651,32 @@
           statusText.className = 'status-text waiting';
           break;
         case 'listening':
+          callBtn.style.display = 'flex';
+          callLabel.style.display = 'block';
+          pttBtn.style.display = 'flex';
+          pttLabel.style.display = 'block';
           callBtn.className = 'call-btn end';
           callBtn.innerHTML = '&#128405;';
           callLabel.textContent = 'Colgar';
-          statusText.textContent = 'Escuchando...';
+          statusText.textContent = 'Mantén el botón azul para hablar';
           statusText.className = 'status-text active';
           visualizer.classList.add('listening');
+          pttBtn.style.background = '#3b82f6';
+          pttBtn.style.boxShadow = '0 0 20px rgba(59,130,246,0.3)';
           break;
         case 'user-speaking':
-          statusText.textContent = 'Hablando...';
+          statusText.textContent = 'Grabando... suelta para enviar';
           statusText.className = 'status-text speaking';
           visualizer.className = 'visualizer user-speaking';
+          pttBtn.style.background = '#a78bfa';
+          pttBtn.style.boxShadow = '0 0 40px rgba(167,139,250,0.5)';
           break;
         case 'thinking':
           statusText.textContent = 'Procesando...';
           statusText.className = 'status-text waiting';
           visualizer.className = 'visualizer thinking';
+          pttBtn.style.display = 'none';
+          pttLabel.style.display = 'none';
           break;
         case 'ai-speaking':
           statusText.textContent = 'Respondiendo...';
@@ -672,9 +696,8 @@
     }
 
     // --- Voice Activity Detection ---
-    function startVAD() {
+    function visualizerTick() {
       if (!analyser || !inCall) return;
-      isListening = true;
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
@@ -682,44 +705,7 @@
         if (!inCall || !analyser) return;
 
         analyser.getByteFrequencyData(dataArray);
-
-        // Calculate RMS volume
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-        const avg = sum / dataArray.length;
-
-        // Update bars visualization
         updateBars(dataArray);
-
-        const threshold = getConfig().vadThreshold;
-
-        if (isListening && !isProcessing) {
-          if (avg > threshold && !isSpeaking) {
-            // Started speaking
-            isSpeaking = true;
-            speechStartTime = Date.now();
-            startRecording();
-            setUI('user-speaking');
-            if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
-          } else if (avg <= threshold && isSpeaking) {
-            // Possible end of speech - wait for silence duration
-            if (!silenceTimer) {
-              silenceTimer = setTimeout(() => {
-                if (isSpeaking && inCall) {
-                  const speechDuration = Date.now() - (speechStartTime || 0);
-                  isSpeaking = false;
-                  silenceTimer = null;
-                  stopRecordingAndSend(speechDuration);
-                }
-              }, SILENCE_DURATION_MS);
-            }
-          } else if (avg > threshold && isSpeaking && silenceTimer) {
-            // Resumed speaking - cancel silence timer
-            clearTimeout(silenceTimer);
-            silenceTimer = null;
-          }
-        }
-
         requestAnimationFrame(tick);
       }
 
@@ -735,6 +721,26 @@
         const h = Math.max(4, (val / 255) * 60);
         bars[i].style.height = h + 'px';
       }
+    }
+
+    // --- Manual Recording (Push-To-Talk) ---
+    function startManualRecording() {
+      if (!inCall || isProcessing || isSpeaking) return;
+      isSpeaking = true;
+      speechStartTime = Date.now();
+      startRecording();
+      setUI('user-speaking');
+    }
+
+    function stopManualRecording() {
+      if (!inCall || !isSpeaking) return;
+      isSpeaking = false;
+      const speechDuration = Date.now() - (speechStartTime || 0);
+
+      // Añadir un pequeño retraso para asegurar que los últimos chunks se añadan
+      setTimeout(() => {
+        stopRecordingAndSend(speechDuration);
+      }, 300);
     }
 
     // --- Recording ---
