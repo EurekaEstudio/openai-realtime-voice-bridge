@@ -56,7 +56,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:3030/api/v1/sessions",
+        "url": "https://host-voice-real-time.pijpe2.easypanel.host/api/v1/sessions",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -66,7 +66,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer mi_token_secreto_aqui"
+              "value": "Bearer vrb_s3cur3_t0k3n_2024x"
             }
           ]
         },
@@ -96,7 +96,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://localhost:3030/api/v1/sessions/{{ $json.session_id }}/text",
+        "url": "=https://host-voice-real-time.pijpe2.easypanel.host/api/v1/sessions/{{ $json.session_id }}/text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -106,7 +106,7 @@
             },
             {
               "name": "Authorization",
-              "value": "Bearer mi_token_secreto_aqui"
+              "value": "Bearer vrb_s3cur3_t0k3n_2024x"
             }
           ]
         },
