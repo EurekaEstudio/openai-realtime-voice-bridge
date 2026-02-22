@@ -40,7 +40,7 @@
       padding-bottom: 40px;
     }
 
-    /* Top section */
+    /* Top */
     .top {
       width: 100%;
     }
@@ -65,7 +65,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Middle - visualizer + status */
+    /* Middle */
     .middle {
       flex: 1;
       display: flex;
@@ -73,9 +73,10 @@
       align-items: center;
       justify-content: center;
       width: 100%;
+      gap: 12px;
     }
 
-    /* Audio visualizer */
+    /* Visualizer */
     .visualizer {
       width: 180px;
       height: 180px;
@@ -85,7 +86,6 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      margin-bottom: 24px;
     }
 
     .visualizer::before {
@@ -100,13 +100,13 @@
 
     .visualizer.listening::before {
       border-color: #4ade80;
-      box-shadow: 0 0 30px rgba(74, 222, 128, 0.15);
+      box-shadow: 0 0 30px rgba(74, 222, 128, .15);
     }
 
     .visualizer.user-speaking::before {
       border-color: #a78bfa;
-      box-shadow: 0 0 40px rgba(167, 139, 250, 0.3);
-      animation: ring-pulse 0.8s ease-in-out infinite;
+      box-shadow: 0 0 40px rgba(167, 139, 250, .3);
+      animation: ring-pulse .8s ease-in-out infinite;
     }
 
     .visualizer.thinking::before {
@@ -116,7 +116,7 @@
 
     .visualizer.ai-speaking::before {
       border-color: #4ade80;
-      box-shadow: 0 0 50px rgba(74, 222, 128, 0.3);
+      box-shadow: 0 0 50px rgba(74, 222, 128, .3);
       animation: ring-pulse 1.2s ease-in-out infinite;
     }
 
@@ -125,28 +125,27 @@
       0%,
       100% {
         transform: scale(1);
-        opacity: 1;
+        opacity: 1
       }
 
       50% {
         transform: scale(1.08);
-        opacity: 0.7;
+        opacity: .7
       }
     }
 
     @keyframes ring-spin {
       0% {
         transform: rotate(0deg);
-        border-style: dashed;
+        border-style: dashed
       }
 
       100% {
         transform: rotate(360deg);
-        border-style: dashed;
+        border-style: dashed
       }
     }
 
-    /* Bars inside visualizer */
     .bars {
       display: flex;
       align-items: center;
@@ -158,7 +157,7 @@
       width: 5px;
       background: #333;
       border-radius: 3px;
-      transition: height 0.1s, background 0.3s;
+      transition: height .1s, background .3s;
       height: 8px;
     }
 
@@ -180,7 +179,7 @@
     }
 
     .status-text {
-      font-size: 0.85rem;
+      font-size: .85rem;
       color: #666;
       min-height: 20px;
     }
@@ -197,17 +196,16 @@
       color: #f59e0b;
     }
 
-    /* Transcript area */
+    /* Transcript */
     .transcript {
       width: 100%;
-      max-height: 120px;
+      max-height: 110px;
       overflow-y: auto;
-      margin-top: 16px;
       padding: 0 10px;
     }
 
     .transcript p {
-      font-size: 0.8rem;
+      font-size: .8rem;
       line-height: 1.4;
       margin-bottom: 6px;
       padding: 6px 10px;
@@ -225,54 +223,126 @@
       background: #0d1f0d;
     }
 
-    /* Bottom - call controls */
+    /* Logs */
+    .logs-panel {
+      width: 100%;
+      max-height: 80px;
+      overflow-y: auto;
+      background: #0d0d14;
+      border: 1px solid #222;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: .68rem;
+      font-family: monospace;
+      text-align: left;
+      color: #888;
+    }
+
+    .logs-panel .log-error {
+      color: #f87171;
+    }
+
+    .logs-panel .log-info {
+      color: #60a5fa;
+    }
+
+    .logs-panel .log-success {
+      color: #4ade80;
+    }
+
+    /* Bottom */
     .bottom {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .call-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
       width: 100%;
     }
 
     .call-btn {
-      width: 72px;
-      height: 72px;
       border-radius: 50%;
       border: none;
-      font-size: 28px;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all .3s;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto;
     }
 
-    .call-btn.start {
-      background: #22c55e;
-      color: #fff;
-      box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-    }
-
-    .call-btn.start:hover {
-      background: #16a34a;
-      transform: scale(1.05);
-    }
-
-    .call-btn.end {
+    .call-btn.end-btn {
+      width: 64px;
+      height: 64px;
+      font-size: 26px;
       background: #ef4444;
       color: #fff;
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+      box-shadow: 0 0 20px rgba(239, 68, 68, .3);
     }
 
-    .call-btn.end:hover {
+    .call-btn.end-btn:hover {
       background: #dc2626;
       transform: scale(1.05);
     }
 
-    .call-btn-label {
-      font-size: 0.75rem;
-      color: #666;
-      margin-top: 10px;
+    .call-btn.start-btn {
+      width: 72px;
+      height: 72px;
+      font-size: 28px;
+      background: #22c55e;
+      color: #fff;
+      box-shadow: 0 0 20px rgba(34, 197, 94, .3);
     }
 
-    /* Settings gear */
+    .call-btn.start-btn:hover {
+      background: #16a34a;
+      transform: scale(1.05);
+    }
+
+    /* PTT button */
+    .ptt-btn {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: none;
+      font-size: 38px;
+      cursor: pointer;
+      background: #3b82f6;
+      color: #fff;
+      box-shadow: 0 0 24px rgba(59, 130, 246, .4);
+      transition: all .15s;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .ptt-btn.active {
+      background: #a78bfa;
+      box-shadow: 0 0 40px rgba(167, 139, 250, .6);
+      transform: scale(.95);
+    }
+
+    .ptt-hint {
+      font-size: .75rem;
+      color: #666;
+      display: none;
+    }
+
+    .call-btn-label {
+      font-size: .75rem;
+      color: #666;
+    }
+
+    /* Settings */
     .settings-btn {
       position: fixed;
       top: 16px;
@@ -289,12 +359,11 @@
       color: #888;
     }
 
-    /* Settings modal */
     .modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, .7);
       z-index: 100;
       align-items: center;
       justify-content: center;
@@ -321,7 +390,7 @@
 
     .modal label {
       display: block;
-      font-size: 0.75rem;
+      font-size: .75rem;
       color: #555;
       margin-bottom: 4px;
       margin-top: 12px;
@@ -335,7 +404,7 @@
       border: 1px solid #333;
       background: #0a0a12;
       color: #fff;
-      font-size: 0.85rem;
+      font-size: .85rem;
     }
 
     .modal textarea {
@@ -345,7 +414,7 @@
       border: 1px solid #333;
       background: #0a0a12;
       color: #fff;
-      font-size: 0.85rem;
+      font-size: .85rem;
       resize: vertical;
       min-height: 60px;
     }
@@ -360,39 +429,11 @@
       font-weight: 600;
       cursor: pointer;
       margin-top: 16px;
-      font-size: 0.9rem;
+      font-size: .9rem;
     }
 
     .modal .save-btn:hover {
       background: #8b5cf6;
-    }
-
-    /* Logs Panel */
-    .logs-panel {
-      width: 100%;
-      max-height: 100px;
-      overflow-y: auto;
-      background: #0d0d14;
-      border: 1px solid #222;
-      border-radius: 8px;
-      padding: 8px;
-      margin-top: 16px;
-      font-size: 0.7rem;
-      font-family: monospace;
-      text-align: left;
-      color: #888;
-    }
-
-    .logs-panel .log-error {
-      color: #f87171;
-    }
-
-    .logs-panel .log-info {
-      color: #60a5fa;
-    }
-
-    .logs-panel .log-success {
-      color: #4ade80;
     }
   </style>
 </head>
@@ -404,30 +445,25 @@
   <!-- Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal">
-      <h2>Configuracion</h2>
+      <h2>Configuración</h2>
       <label>URL del Bridge</label>
       <input type="text" id="bridgeUrl" value="https://host-voice-real-time.pijpe2.easypanel.host">
       <label>Token</label>
       <input type="password" id="bridgeToken" value="vrb_s3cur3_t0k3n_2024x">
       <label>Instrucciones</label>
       <textarea
-        id="instructions">Eres un asistente de voz amable y conversacional. Responde siempre en espanol de forma natural, concisa y con un tono humano. Tus respuestas deben ser cortas y directas, como en una llamada telefonica real.</textarea>
+        id="instructions">Eres un asistente de voz amable y conversacional. Responde siempre en español de forma natural, concisa y con un tono humano. Tus respuestas deben ser cortas y directas, como en una llamada telefonica real.</textarea>
       <label>Voz</label>
       <select id="voiceSelect">
         <option value="alloy">Alloy</option>
-        <option value="coral" selected>Coral</option>
+        <option value="coral">Coral</option>
         <option value="echo">Echo</option>
         <option value="fable">Fable</option>
         <option value="nova">Nova</option>
         <option value="onyx">Onyx</option>
         <option value="shimmer">Shimmer</option>
+        <option value="sol" selected>Sol</option>
         <option value="verse">Verse</option>
-      </select>
-      <label>Sensibilidad del microfono</label>
-      <select id="vadSensitivity">
-        <option value="low">Baja (ambientes ruidosos)</option>
-        <option value="medium" selected>Media</option>
-        <option value="high">Alta (ambientes silenciosos)</option>
       </select>
       <button class="save-btn" onclick="toggleSettings()">Guardar</button>
     </div>
@@ -447,24 +483,25 @@
         <div class="bars" id="bars"></div>
       </div>
       <div class="status-text" id="statusText">Toca para llamar</div>
-
       <div class="transcript" id="transcript"></div>
       <div class="logs-panel" id="logsPanel"></div>
     </div>
 
     <!-- Bottom -->
     <div class="bottom">
-      <button class="call-btn start" id="callBtn" onclick="toggleCall()">&#128222;</button>
-      <div class="call-btn-label" id="callLabel">Llamar</div>
-
-      <button class="call-btn" id="pttBtn"
-        style="display: none; margin-top: 16px; width: 80px; height: 80px; background: #3b82f6; box-shadow: 0 0 20px rgba(59,130,246,0.3); font-size: 32px;"
-        onmousedown="startManualRecording()" onmouseup="stopManualRecording()"
-        ontouchstart="startManualRecording(); event.preventDefault();"
-        ontouchend="stopManualRecording(); event.preventDefault();">
+      <!-- PTT (visible durante llamada) -->
+      <button class="ptt-btn" id="pttBtn" onmousedown="startPTT()" onmouseup="stopPTT()" onmouseleave="stopPTT()"
+        ontouchstart="startPTT(); event.preventDefault();" ontouchend="stopPTT(); event.preventDefault();">
         &#127897;
       </button>
-      <div class="call-btn-label" id="pttLabel" style="display: none;">Mantén para hablar</div>
+      <div class="ptt-hint" id="pttHint">Mantén presionado para hablar</div>
+
+      <!-- Call controls -->
+      <div class="call-row">
+        <button class="call-btn start-btn" id="callBtn" onclick="toggleCall()" style="display:flex;">&#128222;</button>
+        <button class="call-btn end-btn" id="hangBtn" onclick="endCall()" style="display:none;">&#128405;</button>
+      </div>
+      <div class="call-btn-label" id="callLabel">Llamar</div>
     </div>
   </div>
 
@@ -477,22 +514,15 @@
     let analyser = null;
     let mediaRecorder = null;
     let audioChunks = [];
-    let isListening = false;
     let isSpeaking = false;
     let isProcessing = false;
-    let silenceTimer = null;
     let callStartTime = null;
     let timerInterval = null;
     let currentAudio = null;
-
-    // --- Configuration & Constants ---
-    const VAD_THRESHOLDS = { low: 25, medium: 15, high: 8 };
-    const NUM_BARS = 12;
-
-    // Push To Talk Variables
-    let manualRecordingTimeout = null;
-    const MIN_SPEECH_MS = 600;
     let speechStartTime = null;
+
+    const MIN_SPEECH_MS = 400;
+    const NUM_BARS = 12;
 
     // --- DOM ---
     const $ = id => document.getElementById(id);
@@ -500,80 +530,154 @@
     const barsEl = $('bars');
     const statusText = $('statusText');
     const callBtn = $('callBtn');
+    const hangBtn = $('hangBtn');
     const callLabel = $('callLabel');
     const pttBtn = $('pttBtn');
-    const pttLabel = $('pttLabel');
+    const pttHint = $('pttHint');
     const timerEl = $('timer');
     const transcriptEl = $('transcript');
     const logsPanel = $('logsPanel');
+
+    // --- Bars ---
+    for (let i = 0; i < NUM_BARS; i++) {
+      const b = document.createElement('div');
+      b.className = 'bar';
+      barsEl.appendChild(b);
+    }
+    const bars = barsEl.querySelectorAll('.bar');
 
     // --- Logger ---
     function addLog(msg, type = 'info') {
       console.log(`[${type.toUpperCase()}] ${msg}`);
       const d = new Date();
-      const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+      const t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
       const el = document.createElement('div');
       el.className = `log-${type}`;
-      el.textContent = `[${time}] ${msg}`;
+      el.textContent = `[${t}] ${msg}`;
       logsPanel.appendChild(el);
       logsPanel.scrollTop = logsPanel.scrollHeight;
     }
 
-    // Create bars
-    for (let i = 0; i < NUM_BARS; i++) {
-      const bar = document.createElement('div');
-      bar.className = 'bar';
-      barsEl.appendChild(bar);
-    }
-    const bars = barsEl.querySelectorAll('.bar');
-
+    // --- Config ---
     function getConfig() {
       return {
         url: $('bridgeUrl').value.replace(/\/$/, ''),
         token: $('bridgeToken').value,
         instructions: $('instructions').value,
         voice: $('voiceSelect').value,
-        vadThreshold: VAD_THRESHOLDS[$('vadSensitivity').value] || 15,
       };
     }
 
     function toggleSettings() {
-      const m = $('settingsModal');
-      m.classList.toggle('open');
+      $('settingsModal').classList.toggle('open');
+    }
+
+    // --- UI States ---
+    function setUI(state) {
+      visualizer.className = 'visualizer';
+      switch (state) {
+        case 'idle':
+          callBtn.style.display = 'flex';
+          hangBtn.style.display = 'none';
+          pttBtn.style.display = 'none';
+          pttHint.style.display = 'none';
+          pttBtn.classList.remove('active');
+          callLabel.textContent = 'Llamar';
+          statusText.textContent = 'Toca para llamar';
+          statusText.className = 'status-text';
+          timerEl.textContent = '--:--';
+          bars.forEach(b => b.style.height = '8px');
+          break;
+        case 'connecting':
+          callBtn.style.display = 'none';
+          hangBtn.style.display = 'flex';
+          pttBtn.style.display = 'none';
+          pttHint.style.display = 'none';
+          callLabel.textContent = 'Conectando...';
+          statusText.textContent = 'Conectando...';
+          statusText.className = 'status-text waiting';
+          break;
+        case 'listening':
+          callBtn.style.display = 'none';
+          hangBtn.style.display = 'flex';
+          pttBtn.style.display = 'flex';
+          pttHint.style.display = 'block';
+          pttBtn.classList.remove('active');
+          callLabel.textContent = 'Colgar';
+          statusText.textContent = 'Mantén el micrófono para hablar';
+          statusText.className = 'status-text active';
+          visualizer.classList.add('listening');
+          break;
+        case 'user-speaking':
+          pttBtn.classList.add('active');
+          statusText.textContent = 'Grabando... suelta para enviar';
+          statusText.className = 'status-text speaking';
+          visualizer.className = 'visualizer user-speaking';
+          break;
+        case 'thinking':
+          pttBtn.classList.remove('active');
+          pttBtn.style.display = 'none';
+          pttHint.style.display = 'none';
+          statusText.textContent = 'Procesando...';
+          statusText.className = 'status-text waiting';
+          visualizer.className = 'visualizer thinking';
+          break;
+        case 'ai-speaking':
+          pttBtn.style.display = 'none';
+          pttHint.style.display = 'none';
+          statusText.textContent = 'Respondiendo...';
+          statusText.className = 'status-text active';
+          visualizer.className = 'visualizer ai-speaking';
+          break;
+      }
+    }
+
+    // --- Timer ---
+    function updateTimer() {
+      if (!callStartTime) return;
+      const e = Math.floor((Date.now() - callStartTime) / 1000);
+      timerEl.textContent = `${String(Math.floor(e / 60)).padStart(2, '0')}:${String(e % 60).padStart(2, '0')}`;
+    }
+
+    // --- Visualizer bars ---
+    function visualizerTick() {
+      if (!analyser || !inCall) return;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      function tick() {
+        if (!inCall || !analyser) return;
+        analyser.getByteFrequencyData(data);
+        const step = Math.floor(data.length / NUM_BARS);
+        for (let i = 0; i < NUM_BARS; i++) {
+          let v = 0;
+          for (let j = 0; j < step; j++) v += data[i * step + j];
+          bars[i].style.height = Math.max(4, (v / step / 255) * 60) + 'px';
+        }
+        requestAnimationFrame(tick);
+      }
+      tick();
     }
 
     // --- Call control ---
     async function toggleCall() {
-      if (inCall) {
-        await endCall();
-      } else {
-        await startCall();
-      }
+      await startCall();
     }
 
     async function startCall() {
       const cfg = getConfig();
       setUI('connecting');
-
       try {
-        // Get microphone
         stream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
-
         audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
         const source = audioContext.createMediaStreamSource(stream);
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
         source.connect(analyser);
 
-        // Create session
         const res = await fetch(cfg.url + '/api/v1/sessions', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + cfg.token,
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.token },
           body: JSON.stringify({ instructions: cfg.instructions, voice: cfg.voice }),
         });
         const data = await res.json();
@@ -584,22 +688,19 @@
         callStartTime = Date.now();
         timerInterval = setInterval(updateTimer, 1000);
         updateTimer();
-
         setUI('listening');
-        // startVAD(); // Eliminado a favor de Push To Talk
-        visualizerTick(); // Solo para las barritas
+        visualizerTick();
+        addLog('Sesión iniciada ✓', 'success');
       } catch (err) {
         cleanup();
         setUI('idle');
         statusText.textContent = 'Error: ' + err.message;
+        addLog('Error al conectar: ' + err.message, 'error');
       }
     }
 
     async function endCall() {
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-      }
+      if (currentAudio) { currentAudio.pause(); currentAudio = null; }
       if (sessionId) {
         const cfg = getConfig();
         try {
@@ -611,122 +712,24 @@
       }
       cleanup();
       setUI('idle');
+      addLog('Sesión terminada', 'info');
     }
 
     function cleanup() {
       inCall = false;
       sessionId = null;
-      isListening = false;
       isSpeaking = false;
       isProcessing = false;
-
       if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
       if (audioContext) { audioContext.close().catch(() => { }); audioContext = null; }
-      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') { mediaRecorder.stop(); }
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
       mediaRecorder = null;
       analyser = null;
     }
 
-    function setUI(state) {
-      visualizer.className = 'visualizer';
-      switch (state) {
-        case 'idle':
-          callBtn.style.display = 'flex';
-          callLabel.style.display = 'block';
-          pttBtn.style.display = 'none';
-          pttLabel.style.display = 'none';
-          callBtn.className = 'call-btn start';
-          callBtn.innerHTML = '&#128222;';
-          callLabel.textContent = 'Llamar';
-          statusText.textContent = 'Toca para llamar';
-          statusText.className = 'status-text';
-          timerEl.textContent = '--:--';
-          bars.forEach(b => b.style.height = '8px');
-          break;
-        case 'connecting':
-          callBtn.className = 'call-btn end';
-          callBtn.innerHTML = '&#128222;';
-          callLabel.textContent = 'Conectando...';
-          statusText.textContent = 'Conectando...';
-          statusText.className = 'status-text waiting';
-          break;
-        case 'listening':
-          callBtn.style.display = 'flex';
-          callLabel.style.display = 'block';
-          pttBtn.style.display = 'flex';
-          pttLabel.style.display = 'block';
-          callBtn.className = 'call-btn end';
-          callBtn.innerHTML = '&#128405;';
-          callLabel.textContent = 'Colgar';
-          statusText.textContent = 'Mantén el botón azul para hablar';
-          statusText.className = 'status-text active';
-          visualizer.classList.add('listening');
-          pttBtn.style.background = '#3b82f6';
-          pttBtn.style.boxShadow = '0 0 20px rgba(59,130,246,0.3)';
-          break;
-        case 'user-speaking':
-          statusText.textContent = 'Grabando... suelta para enviar';
-          statusText.className = 'status-text speaking';
-          visualizer.className = 'visualizer user-speaking';
-          pttBtn.style.background = '#a78bfa';
-          pttBtn.style.boxShadow = '0 0 40px rgba(167,139,250,0.5)';
-          break;
-        case 'thinking':
-          statusText.textContent = 'Procesando...';
-          statusText.className = 'status-text waiting';
-          visualizer.className = 'visualizer thinking';
-          pttBtn.style.display = 'none';
-          pttLabel.style.display = 'none';
-          break;
-        case 'ai-speaking':
-          statusText.textContent = 'Respondiendo...';
-          statusText.className = 'status-text active';
-          visualizer.className = 'visualizer ai-speaking';
-          break;
-      }
-    }
-
-    // --- Timer ---
-    function updateTimer() {
-      if (!callStartTime) return;
-      const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
-      const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-      const secs = String(elapsed % 60).padStart(2, '0');
-      timerEl.textContent = mins + ':' + secs;
-    }
-
-    // --- Voice Activity Detection ---
-    function visualizerTick() {
-      if (!analyser || !inCall) return;
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      function tick() {
-        if (!inCall || !analyser) return;
-
-        analyser.getByteFrequencyData(dataArray);
-        updateBars(dataArray);
-        requestAnimationFrame(tick);
-      }
-
-      tick();
-    }
-
-    function updateBars(dataArray) {
-      const step = Math.floor(dataArray.length / NUM_BARS);
-      for (let i = 0; i < NUM_BARS; i++) {
-        let val = 0;
-        for (let j = 0; j < step; j++) val += dataArray[i * step + j];
-        val = val / step;
-        const h = Math.max(4, (val / 255) * 60);
-        bars[i].style.height = h + 'px';
-      }
-    }
-
-    // --- Manual Recording (Push-To-Talk) ---
-    function startManualRecording() {
+    // --- Push-To-Talk ---
+    function startPTT() {
       if (!inCall || isProcessing || isSpeaking) return;
       isSpeaking = true;
       speechStartTime = Date.now();
@@ -734,87 +737,75 @@
       setUI('user-speaking');
     }
 
-    function stopManualRecording() {
+    function stopPTT() {
       if (!inCall || !isSpeaking) return;
       isSpeaking = false;
-      const speechDuration = Date.now() - (speechStartTime || 0);
-
-      // Añadir un pequeño retraso para asegurar que los últimos chunks se añadan
-      setTimeout(() => {
-        stopRecordingAndSend(speechDuration);
-      }, 300);
+      const duration = Date.now() - (speechStartTime || 0);
+      // Esperar 300ms para que los últimos chunks entren
+      setTimeout(() => stopRecordingAndSend(duration), 300);
     }
 
     // --- Recording ---
     function startRecording() {
       if (!stream || mediaRecorder) return;
-
       audioChunks = [];
       try {
         mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-        mediaRecorder.ondataavailable = e => {
-          if (e.data.size > 0) audioChunks.push(e.data);
-        };
-        // Solicitar fragmentos cada cierto tiempo en lugar de solo al final,
-        // para evitar problemas con grabaciones largas
-        mediaRecorder.start(250);
-        addLog('Grabación iniciada', 'info');
       } catch (e) {
-        // Fallback mimeType
         mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = e => {
-          if (e.data.size > 0) audioChunks.push(e.data);
-        };
-        mediaRecorder.start(250);
-        addLog(`Grabación iniciada (fallback): ${e.message}`, 'info');
       }
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.start(200);
+      addLog('Grabando...', 'info');
     }
 
     async function stopRecordingAndSend(speechDuration) {
       if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-        setUI('listening');
+        if (inCall) setUI('listening');
         return;
       }
 
       isProcessing = true;
       setUI('thinking');
 
-      // Stop recording
-      const stopped = new Promise(resolve => {
+      await new Promise(resolve => {
         mediaRecorder.onstop = resolve;
         mediaRecorder.stop();
       });
-      await stopped;
       mediaRecorder = null;
 
-      // Check minimum speech duration or empty chunks
       if (speechDuration < MIN_SPEECH_MS) {
-        addLog(`Audio ignorado (muy corto: ${speechDuration}ms)`, 'info');
+        addLog(`Audio muy corto (${speechDuration}ms), ignorado`, 'info');
         isProcessing = false;
-        setUI('listening');
+        if (inCall) setUI('listening');
         return;
       }
-
       if (audioChunks.length === 0) {
-        addLog(`Error: No se capturaron datos de audio`, 'error');
+        addLog('Sin datos de audio', 'error');
         isProcessing = false;
-        setUI('listening');
+        if (inCall) setUI('listening');
         return;
       }
 
-      addLog(`Procesando audio (${speechDuration}ms)...`, 'info');
       const blob = new Blob(audioChunks, { type: 'audio/webm' });
       audioChunks = [];
 
+      if (blob.size < 800) {
+        addLog(`Buffer demasiado pequeño (${blob.size} bytes), ignorado`, 'info');
+        isProcessing = false;
+        if (inCall) setUI('listening');
+        return;
+      }
+
+      addLog(`Enviando audio (${speechDuration}ms, ${blob.size} bytes)...`, 'info');
+
       try {
-        // Convert to WAV
         const arrayBuffer = await blob.arrayBuffer();
         const decodeCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
         const audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
         decodeCtx.close();
         const wavBase64 = audioBufferToWavBase64(audioBuffer);
 
-        // Send to bridge
         const cfg = getConfig();
         const res = await fetch(cfg.url + '/api/v1/sessions/' + sessionId + '/audio', {
           method: 'POST',
@@ -827,23 +818,18 @@
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
 
-        // Show transcript
-        if (data.input_transcript) {
-          addTranscript(data.input_transcript, 'user');
-        }
+        if (data.input_transcript) addTranscript(data.input_transcript, 'user');
         if (data.response_text) {
           addTranscript(data.response_text, 'ai');
-          addLog(`Respuesta IA: ${data.response_text.substring(0, 30)}...`, 'success');
+          addLog(`IA: ${data.response_text.substring(0, 40)}...`, 'success');
         }
 
-        // Play response audio
         if (data.audio_wav_base64) {
           setUI('ai-speaking');
           await playAudio(data.audio_wav_base64);
         }
       } catch (err) {
-        addLog(`Error enviando audio: ${err.message}`, 'error');
-        addTranscript('Error: ' + err.message, 'ai');
+        addLog(`Error: ${err.message}`, 'error');
       }
 
       isProcessing = false;
@@ -869,39 +855,33 @@
       transcriptEl.scrollTop = transcriptEl.scrollHeight;
     }
 
-    // --- WAV encoder (resamples to 24kHz PCM16 mono) ---
+    // --- WAV encoder (PCM16 mono 24kHz) ---
     function audioBufferToWavBase64(buffer) {
-      const sampleRate = 24000;
-      const inputData = buffer.getChannelData(0);
-      const inputSR = buffer.sampleRate;
-      const ratio = inputSR / sampleRate;
-      const outLen = Math.floor(inputData.length / ratio);
-      const pcm16 = new Int16Array(outLen);
-
+      const SR = 24000;
+      const input = buffer.getChannelData(0);
+      const ratio = buffer.sampleRate / SR;
+      const outLen = Math.floor(input.length / ratio);
+      const pcm = new Int16Array(outLen);
       for (let i = 0; i < outLen; i++) {
         const si = i * ratio;
         const sf = Math.floor(si);
         const f = si - sf;
-        const sample = (inputData[sf] || 0) + ((inputData[sf + 1] || 0) - (inputData[sf] || 0)) * f;
-        const clamped = Math.max(-1, Math.min(1, sample));
-        pcm16[i] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7FFF;
+        const s = (input[sf] || 0) + ((input[sf + 1] || 0) - (input[sf] || 0)) * f;
+        const c = Math.max(-1, Math.min(1, s));
+        pcm[i] = c < 0 ? c * 0x8000 : c * 0x7FFF;
       }
-
-      const dataSize = pcm16.length * 2;
+      const dataSize = pcm.length * 2;
       const wav = new ArrayBuffer(44 + dataSize);
       const v = new DataView(wav);
       const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
-
       w(0, 'RIFF'); v.setUint32(4, 36 + dataSize, true);
       w(8, 'WAVE'); w(12, 'fmt ');
       v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
-      v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+      v.setUint32(24, SR, true); v.setUint32(28, SR * 2, true);
       v.setUint16(32, 2, true); v.setUint16(34, 16, true);
       w(36, 'data'); v.setUint32(40, dataSize, true);
-      new Uint8Array(wav, 44).set(new Uint8Array(pcm16.buffer));
-
-      let bin = '';
-      const bytes = new Uint8Array(wav);
+      new Uint8Array(wav, 44).set(new Uint8Array(pcm.buffer));
+      let bin = ''; const bytes = new Uint8Array(wav);
       for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
       return btoa(bin);
     }
