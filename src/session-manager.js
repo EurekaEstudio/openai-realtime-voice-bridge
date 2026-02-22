@@ -332,9 +332,14 @@ export class SessionManager {
         isAudioInput: true,
       });
 
-      // Limpiar el buffer de audio primero
+      // Limpiar el buffer de audio y cancelar cualquier respuesta previa
+      // para evitar errores de concurrencia (conversation_already_has_active_response)
       session.ws.send(JSON.stringify({
         type: 'input_audio_buffer.clear',
+      }));
+
+      session.ws.send(JSON.stringify({
+        type: 'response.cancel'
       }));
 
       // Enviar el audio en chunks (máximo ~15KB por mensaje)
@@ -352,16 +357,19 @@ export class SessionManager {
         event_id: `audio_${requestId}`,
       }));
 
-      // Solicitar respuesta (sin delay ya que no hay cancel previo)
-      if (session.status === 'connected') {
-        session.ws.send(JSON.stringify({
-          type: 'response.create',
-          event_id: `res_${requestId}`,
-          response: {
-            modalities: options.returnAudio !== false ? ['text', 'audio'] : ['text'],
-          },
-        }));
-      }
+      // Solicitar respuesta con un pequeño delay de seguridad
+      // para dar tiempo a que se procese la cancelación y el commit del buffer
+      setTimeout(() => {
+        if (session.status === 'connected') {
+          session.ws.send(JSON.stringify({
+            type: 'response.create',
+            event_id: `res_${requestId}`,
+            response: {
+              modalities: options.returnAudio !== false ? ['text', 'audio'] : ['text'],
+            },
+          }));
+        }
+      }, 250);
     });
   }
 
