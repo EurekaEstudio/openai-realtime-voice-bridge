@@ -308,10 +308,17 @@ export class SessionManager {
             request_id: requestId,
           };
 
-          if (options.returnAudio !== false && data.audioDelta.length > 0) {
+          const audioChunks = data.audioDelta.length;
+          const audioBytes = data.audioDelta.reduce((acc, d) => acc + d.length, 0);
+          log.info(`[Session ${session.id}] Audio chunks: ${audioChunks}, ~${audioBytes} chars base64`);
+
+          if (options.returnAudio !== false && audioChunks > 0) {
             result.audio_base64 = data.audioDelta.join('');
             result.audio_format = 'pcm16';
             result.audio_sample_rate = 24000;
+            log.info(`[Session ${session.id}] Audio listo para enviar al cliente (${Math.round(audioBytes * 0.75 / 1024)}KB)`);
+          } else if (audioChunks === 0) {
+            log.warn(`[Session ${session.id}] OpenAI no devolvió audio. Verifica que el modelo soporte audio en modalities.`);
           }
 
           resolve(result);

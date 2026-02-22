@@ -774,13 +774,13 @@
       mediaRecorder = null;
 
       if (speechDuration < MIN_SPEECH_MS) {
-        addLog(`Audio muy corto (${speechDuration}ms), ignorado`, 'info');
+        addLog(`Audio muy corto (${speechDuration}ms), mín=${MIN_SPEECH_MS}ms`, 'info');
         isProcessing = false;
         if (inCall) setUI('listening');
         return;
       }
       if (audioChunks.length === 0) {
-        addLog('Sin datos de audio', 'error');
+        addLog('Sin datos de audio capturados', 'error');
         isProcessing = false;
         if (inCall) setUI('listening');
         return;
@@ -790,22 +790,36 @@
       audioChunks = [];
 
       if (blob.size < 800) {
-        addLog(`Buffer demasiado pequeño (${blob.size} bytes), ignorado`, 'info');
+        addLog(`Buffer muy pequeño (${blob.size} bytes), ignorado`, 'info');
         isProcessing = false;
         if (inCall) setUI('listening');
         return;
       }
 
-      addLog(`Enviando audio (${speechDuration}ms, ${blob.size} bytes)...`, 'info');
+      addLog(`📤 Convirtiendo audio (${speechDuration}ms, ${blob.size} bytes)...`, 'info');
 
+      let wavBase64;
       try {
         const arrayBuffer = await blob.arrayBuffer();
+        // Importante: resumir AudioContext (política de autoplay del browser)
+        if (audioContext && audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
         const decodeCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
         const audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
         decodeCtx.close();
-        const wavBase64 = audioBufferToWavBase64(audioBuffer);
+        wavBase64 = audioBufferToWavBase64(audioBuffer);
+        addLog(`✅ Audio convertido a WAV (${Math.round(wavBase64.length * 0.75 / 1024)}KB)`, 'info');
+      } catch (err) {
+        addLog(`❌ Error convirtiendo audio: ${err.message}`, 'error');
+        isProcessing = false;
+        if (inCall) setUI('listening');
+        return;
+      }
 
+      try {
         const cfg = getConfig();
+        addLog(`🔗 Enviando al servidor...`, 'info');
         const res = await fetch(cfg.url + '/api/v1/sessions/' + sessionId + '/audio', {
           method: 'POST',
           headers: {
@@ -815,20 +829,31 @@
           body: JSON.stringify({ audio_base64: wavBase64, audio_format: 'wav', return_audio: true }),
         });
         const data = await res.json();
-        if (!data.success) throw new Error(data.error);
+
+        // --- LOG DETALLADO PARA DIAGNÓSTICO Y N8N ---
+        addLog(`📥 Respuesta del servidor:`, 'info');
+        addLog(`  success: ${data.success}`, 'info');
+        addLog(`  response_text: "${(data.response_text || '').substring(0, 60)}"`, 'success');
+        addLog(`  input_transcript: "${(data.input_transcript || '').substring(0, 60)}"`, 'info');
+        addLog(`  duration_ms: ${data.duration_ms}ms`, 'info');
+        addLog(`  audio_wav_base64: ${data.audio_wav_base64 ? Math.round(data.audio_wav_base64.length * 0.75 / 1024) + 'KB' : 'VACÍO ⚠️'}`, data.audio_wav_base64 ? 'success' : 'error');
+        if (data.error) addLog(`  error: ${data.error}`, 'error');
+
+        if (!data.success) throw new Error(data.error || 'Error del servidor');
 
         if (data.input_transcript) addTranscript(data.input_transcript, 'user');
-        if (data.response_text) {
-          addTranscript(data.response_text, 'ai');
-          addLog(`IA: ${data.response_text.substring(0, 40)}...`, 'success');
-        }
+        if (data.response_text) addTranscript(data.response_text, 'ai');
 
         if (data.audio_wav_base64) {
+          addLog('🔊 Reproduciendo respuesta de audio...', 'success');
           setUI('ai-speaking');
           await playAudio(data.audio_wav_base64);
+          addLog('✅ Audio reproducido', 'success');
+        } else {
+          addLog('⚠️ El servidor no devolvió audio. Revisa los logs de EasyPanel.', 'error');
         }
       } catch (err) {
-        addLog(`Error: ${err.message}`, 'error');
+        addLog(`❌ Error: ${err.message}`, 'error');
       }
 
       isProcessing = false;
