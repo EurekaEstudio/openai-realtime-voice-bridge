@@ -485,12 +485,14 @@
     let timerInterval = null;
     let currentAudio = null;
 
+    // --- Configuration & Constants ---
+    const VAD_THRESHOLDS = { low: 25, medium: 15, high: 8 };
+    const NUM_BARS = 12;
+
     // Push To Talk Variables
     let manualRecordingTimeout = null;
     const MIN_SPEECH_MS = 600;
     let speechStartTime = null;
-
-    const NUM_BARS = 12;
 
     // --- DOM ---
     const $ = id => document.getElementById(id);
