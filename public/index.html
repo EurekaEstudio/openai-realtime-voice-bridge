@@ -801,17 +801,42 @@
       let wavBase64;
       try {
         const arrayBuffer = await blob.arrayBuffer();
-        // Importante: resumir AudioContext (política de autoplay del browser)
+
+        // Si el AudioContext está suspendido, resumirlo (política de autoplay del browser)
         if (audioContext && audioContext.state === 'suspended') {
           await audioContext.resume();
+          addLog('AudioContext reanudado', 'info');
         }
+
         const decodeCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
         const audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
         decodeCtx.close();
+
+        // Si el buffer tiene 0 samples, el stream está muerto — re-obtener micrófono
+        if (audioBuffer.length === 0 || audioBuffer.duration < 0.05) {
+          addLog(`⚠️ AudioBuffer vacío (${audioBuffer.length} samples, ${audioBuffer.duration.toFixed(2)}s). Re-iniciando stream...`, 'error');
+          // Re-obtener el micrófono y reconectar al AudioContext
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+            });
+            if (audioContext) {
+              const newSource = audioContext.createMediaStreamSource(stream);
+              newSource.connect(analyser);
+            }
+            addLog('✅ Micrófono re-iniciado', 'success');
+          } catch (e) {
+            addLog(`❌ No se pudo re-iniciar el micrófono: ${e.message}`, 'error');
+          }
+          isProcessing = false;
+          if (inCall) setUI('listening');
+          return;
+        }
+
         wavBase64 = audioBufferToWavBase64(audioBuffer);
-        addLog(`✅ Audio convertido a WAV (${Math.round(wavBase64.length * 0.75 / 1024)}KB)`, 'info');
+        addLog(`✅ WAV listo: ${audioBuffer.length} samples, ${audioBuffer.duration.toFixed(2)}s, ${Math.round(wavBase64.length * 0.75 / 1024)}KB`, 'info');
       } catch (err) {
-        addLog(`❌ Error convirtiendo audio: ${err.message}`, 'error');
+        addLog(`❌ Error decodificando audio: ${err.message}`, 'error');
         isProcessing = false;
         if (inCall) setUI('listening');
         return;
