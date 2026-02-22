@@ -330,12 +330,6 @@ export class SessionManager {
         type: 'input_audio_buffer.clear',
       }));
 
-      // Cancelar cualquier respuesta activa antes de enviar el audio nuevo
-      // Esto previene el error 'conversation_already_has_active_response'
-      session.ws.send(JSON.stringify({
-        type: 'response.cancel'
-      }));
-
       // Enviar el audio en chunks (máximo ~15KB por mensaje)
       const CHUNK_SIZE = 15000;
       for (let i = 0; i < audioBase64.length; i += CHUNK_SIZE) {
@@ -351,19 +345,16 @@ export class SessionManager {
         event_id: `audio_${requestId}`,
       }));
 
-      // Esperar un poco antes de solicitar la respuesta, para permitir que OpenAI procese la cancelación
-      // y el buffer, evitando el error "conversation_already_has_active_response"
-      setTimeout(() => {
-        if (session.status === 'connected') {
-          session.ws.send(JSON.stringify({
-            type: 'response.create',
-            event_id: `res_${requestId}`,
-            response: {
-              modalities: options.returnAudio !== false ? ['text', 'audio'] : ['text'],
-            },
-          }));
-        }
-      }, 350);
+      // Solicitar respuesta (sin delay ya que no hay cancel previo)
+      if (session.status === 'connected') {
+        session.ws.send(JSON.stringify({
+          type: 'response.create',
+          event_id: `res_${requestId}`,
+          response: {
+            modalities: options.returnAudio !== false ? ['text', 'audio'] : ['text'],
+          },
+        }));
+      }
     });
   }
 
